@@ -1,123 +1,79 @@
 {% extends "base.html" %}
 
+{% macro book_row(book, when, draggable=false) %}
+  <article class="book-row {% if selected and selected.id == book.id %}is-selected{% endif %}"
+           data-book-row data-search="{{ (book.title ~ ' ' ~ (book.author or ''))|lower }}"
+           data-book-id="{{ book.id }}" {% if draggable %}draggable="true"{% endif %}>
+    {% if draggable %}<span class="drag-handle" title="拖拽調整待讀順序" aria-hidden="true">⠿</span>{% endif %}
+    <a class="book-link" href="{{ url_for('index', book=book.id) }}"
+       data-detail-url="{{ url_for('book_detail', book_id=book.id) }}"
+       {% if selected and selected.id == book.id %}aria-current="true"{% endif %}>
+      <span class="book-title">{{ book.title }}</span>
+      <span class="book-meta">
+        {% if book.author %}<span>{{ book.author }}</span>{% endif %}
+        {% if when %}<span>{{ when }}</span>{% endif %}
+        <span class="book-status">{% if book.status == 'reading' %}在讀{% elif book.status == 'planned' %}待讀{% else %}完成{% endif %}</span>
+      </span>
+    </a>
+  </article>
+{% endmacro %}
+
 {% block header_action %}
-  <a class="button button--primary" href="{{ url_for('add_book') }}">＋ 新增書籍</a>
+  <div class="header-actions">
+    <a class="text-action" href="{{ url_for('backup') }}" title="下載包含資料庫及所有 PDF 附件的備份">備份</a>
+    <a class="button button--primary" href="{{ url_for('add_book') }}">＋ 新增書籍</a>
+  </div>
 {% endblock %}
 
-{% macro book_details(book) %}
-  {% if book.author or book.edition %}
-    <p class="book-meta">
-      {% if book.author %}<span>{{ book.author }}</span>{% endif %}
-      {% if book.edition %}<span>版本：{{ book.edition }}</span>{% endif %}
-    </p>
-  {% endif %}
-{% endmacro %}
-
-{% macro edit_link(book) %}
-  <a class="text-action" href="{{ url_for('edit_book', book_id=book.id) }}">編輯</a>
-{% endmacro %}
-
-{% macro delete_form(book) %}
-  <form class="inline-form" method="post" action="{{ url_for('delete_book', book_id=book.id) }}" onsubmit="return confirm('確定刪除這本書嗎？')">
-    <button class="text-action text-action--danger" type="submit">刪除</button>
-  </form>
-{% endmacro %}
-
 {% block content %}
-  <section class="reading-section" aria-labelledby="reading-heading">
-    <div class="section-heading">
-      <h1 id="reading-heading">正在閱讀</h1>
-      <span class="section-count" aria-label="共 {{ reading|length }} 本">{{ reading|length }}</span>
-    </div>
-    {% if reading %}
-      <div class="book-list">
-        {% for book in reading %}
-          <article class="book-row">
-            <div class="book-copy">
-              <h2>{{ book.title }}</h2>
-              {{ book_details(book) }}
-              {% if book.start_date %}<p class="book-date">開始日期：{{ book.start_date }}</p>{% endif %}
-            </div>
-            <div class="book-actions">
-              <a class="button button--quiet" href="{{ url_for('complete_book', book_id=book.id) }}">完成閱讀</a>
-              {{ edit_link(book) }}
-            </div>
-          </article>
-        {% endfor %}
+  <div class="workspace" data-workspace style="--list-width: 40%">
+    <aside class="book-pane" aria-label="閱讀清單">
+      <div class="search-line">
+        <label for="book-search" class="visually-hidden">搜尋書名或作者</label>
+        <input id="book-search" type="search" placeholder="搜尋書名或作者…" autocomplete="off" data-search-input>
       </div>
-    {% else %}
-      <p class="empty-state">尚未有正在閱讀的書。</p>
-    {% endif %}
-  </section>
-
-  <section class="reading-section" aria-labelledby="planned-heading">
-    <div class="section-heading">
-      <h1 id="planned-heading">準備閱讀</h1>
-      <span class="section-count" aria-label="共 {{ planned|length }} 本">{{ planned|length }}</span>
-    </div>
-    {% if planned %}
-      <div class="book-list">
-        {% for book in planned %}
-          <article class="book-row">
-            <div class="book-copy">
-              <h2>{{ book.title }}</h2>
-              {{ book_details(book) }}
-            </div>
-            <div class="book-actions">
-              <a class="button button--quiet" href="{{ url_for('start_book', book_id=book.id) }}">開始閱讀</a>
-              {{ edit_link(book) }}
-              {{ delete_form(book) }}
-            </div>
-          </article>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty-state">準備閱讀清單是空的。</p>
-    {% endif %}
-  </section>
-
-  <section class="reading-section" aria-labelledby="history-heading">
-    <div class="section-heading">
-      <h1 id="history-heading">歷史閱讀</h1>
-      <span class="section-count" aria-label="共 {{ history_groups.values()|map('length')|sum }} 本">{{ history_groups.values()|map('length')|sum }}</span>
-    </div>
-    {% if history_groups %}
-      <div class="history-groups">
+      <section class="reading-section" data-group>
+        <div class="section-heading"><h2>正在閱讀</h2><span class="section-count">{{ reading|length }}</span></div>
+        <div class="book-list">
+          {% for book in reading %}{{ book_row(book, book.start_date) }}{% endfor %}
+        </div>
+        {% if not reading %}<p class="empty-state">尚未有正在閱讀的書。</p>{% endif %}
+      </section>
+      <section class="reading-section" data-group>
+        <div class="section-heading">
+          <h2>準備閱讀</h2><span class="section-count">{{ planned|length }}</span>
+          {% if planned|length > 1 %}<span class="sort-hint">拖拽排序</span>{% endif %}
+        </div>
+        <div class="book-list" data-planned-list data-reorder-url="{{ url_for('reorder_books') }}">
+          {% for book in planned %}{{ book_row(book, '', true) }}{% endfor %}
+        </div>
+        {% if not planned %}<p class="empty-state">準備閱讀清單是空的。</p>{% endif %}
+      </section>
+      <section class="reading-section" data-group>
+        <div class="section-heading"><h2>歷史閱讀</h2><span class="section-count">{{ history_groups.values()|map('length')|sum }}</span></div>
         {% for year, books in history_groups.items() %}
-          <div class="history-group">
-            <h2 class="year-heading">{{ year }}</h2>
+          <div class="history-group" data-year-group>
+            <h3 class="year-heading">{{ year }}</h3>
             <div class="book-list">
-              {% for book in books %}
-                <article class="book-row">
-                  <div class="book-copy">
-                    <h3>{{ book.title }}</h3>
-                    {{ book_details(book) }}
-                    {% if book.start_date and book.finish_date %}
-                      <p class="book-date">{{ book.start_date }} – {{ book.finish_date }}</p>
-                    {% elif book.start_date %}
-                      <p class="book-date">{{ book.start_date }} –</p>
-                    {% elif book.finish_date %}
-                      <p class="book-date">– {{ book.finish_date }}</p>
-                    {% endif %}
-                    {% if book.record %}
-                      <details class="book-record">
-                        <summary>閱讀記錄</summary>
-                        <p>{{ book.record }}</p>
-                      </details>
-                    {% endif %}
-                  </div>
-                  <div class="book-actions">
-                    {{ edit_link(book) }}
-                    {{ delete_form(book) }}
-                  </div>
-                </article>
-              {% endfor %}
+              {% for book in books %}{{ book_row(book, book.finish_date) }}{% endfor %}
             </div>
           </div>
         {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty-state">尚未有閱讀紀錄。</p>
-    {% endif %}
-  </section>
+        {% if not history_groups %}<p class="empty-state">尚未有閱讀記錄。</p>{% endif %}
+      </section>
+      <p class="empty-state" data-no-matches hidden>找不到相符的書籍。</p>
+    </aside>
+    <div class="pane-resizer" role="separator" aria-orientation="vertical"
+         aria-label="調整書籍清單寬度" tabindex="0" aria-valuemin="25" aria-valuemax="60"
+         aria-valuenow="40" data-resizer></div>
+    <section class="detail-pane" aria-label="書籍詳情" data-detail-pane>
+      {% if selected %}
+        {% set book = selected %}
+        {% include "_detail.html" %}
+      {% else %}
+        <p class="empty-state detail-placeholder">新增一本書，開始你的閱讀記錄。</p>
+      {% endif %}
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='workspace.js') }}" defer></script>
 {% endblock %}

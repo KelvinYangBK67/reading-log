@@ -61,3 +61,6 @@ static/fonts/
 *.woff2
 *.ttc
 *.eot
+
+# Locally installed fonts are personal files, not source code
+/static/fonts/

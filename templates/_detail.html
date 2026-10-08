@@ -1,0 +1,77 @@
+<div class="detail-content" data-detail-id="{{ book.id }}">
+  <header class="detail-heading">
+    <h1>{{ book.title }}</h1>
+    {% if book.author or book.edition %}
+      <p class="detail-meta">
+        {% if book.author %}<span>{{ book.author }}</span>{% endif %}
+        {% if book.edition %}<span>版本：{{ book.edition }}</span>{% endif %}
+      </p>
+    {% endif %}
+    <p class="detail-dates">
+      {% if book.start_date or book.finish_date %}
+        {{ book.start_date or '—' }} – {{ book.finish_date or '—' }}
+      {% else %}
+        {% if book.status == 'planned' %}準備閱讀{% elif book.status == 'reading' %}正在閱讀{% else %}已完成{% endif %}
+      {% endif %}
+    </p>
+  </header>
+  <div class="detail-actions">
+    {% if book.status == 'planned' %}
+      <a class="button button--quiet" href="{{ url_for('start_book', book_id=book.id) }}">開始閱讀</a>
+    {% elif book.status == 'reading' %}
+      <a class="button button--quiet" href="{{ url_for('complete_book', book_id=book.id) }}">完成閱讀</a>
+    {% endif %}
+    <a class="text-action" href="{{ url_for('edit_book', book_id=book.id) }}">編輯書籍</a>
+    <form method="post" action="{{ url_for('delete_book', book_id=book.id) }}"
+          onsubmit="return confirm('確定刪除這本書及其所有 PDF 附件嗎？')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="text-action text-action--danger" type="submit">刪除</button>
+    </form>
+  </div>
+  <section class="detail-section">
+    <div class="detail-section-heading">
+      <h2>閱讀記錄</h2>
+      <button type="button" class="text-action" data-toggle-record>
+        {% if book.record %}編輯{% else %}新增記錄{% endif %}
+      </button>
+    </div>
+    <div class="record-content" data-record-display>
+      {% if book.record %}{{ book.record }}{% else %}<span class="empty-state">尚無閱讀記錄。</span>{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('update_record', book_id=book.id) }}"
+          class="record-form" data-record-form hidden>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label class="visually-hidden" for="record-{{ book.id }}">閱讀記錄</label>
+      <textarea id="record-{{ book.id }}" name="record" rows="12">{{ book.record }}</textarea>
+      <div class="form-actions">
+        <button class="button button--primary" type="submit">儲存記錄</button>
+        <button class="button button--plain" type="button" data-cancel-record>取消</button>
+      </div>
+    </form>
+  </section>
+  <section class="detail-section">
+    <div class="detail-section-heading"><h2>PDF 附件</h2></div>
+    {% if attachments %}
+      <div class="attachment-list">
+        {% for attachment in attachments %}
+          <div class="attachment-row">
+            <a href="{{ url_for('open_attachment', book_id=book.id, attachment_id=attachment.id) }}"
+               target="_blank" rel="noopener" title="開啟 PDF">📄 {{ attachment.filename }}</a>
+            <form method="post" action="{{ url_for('delete_attachment', book_id=book.id, attachment_id=attachment.id) }}"
+                  onsubmit="return confirm('確定移除此附件嗎？')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="text-action text-action--danger" type="submit">移除</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('add_attachment', book_id=book.id) }}"
+          enctype="multipart/form-data" class="upload-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="pdf-{{ book.id }}" class="visually-hidden">選取 PDF 附件</label>
+      <input id="pdf-{{ book.id }}" type="file" name="pdf" accept=".pdf,application/pdf" required>
+      <button type="submit" class="button button--quiet">附加 PDF</button>
+    </form>
+  </section>
+</div>

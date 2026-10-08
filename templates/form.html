@@ -8,6 +8,7 @@
     </header>
 
     <form class="book-form" method="post" data-book-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="field">
         <label for="title">書名 <span class="required">必填</span></label>
         <input id="title" name="title" type="text" value="{{ book.title }}" required autofocus>

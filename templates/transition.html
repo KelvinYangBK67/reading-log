@@ -8,6 +8,7 @@
     </header>
 
     <form class="book-form" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="field">
         <label for="{{ field_name }}">{{ field_label }} <span class="optional">選填</span></label>
         <input id="{{ field_name }}" name="{{ field_name }}" type="date" value="{{ field_value }}" autofocus>

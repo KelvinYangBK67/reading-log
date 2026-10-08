@@ -1,3 +1,5 @@
+import io
+import zipfile
 import sqlite3
 import tempfile
 import unittest
@@ -15,6 +17,7 @@ class ReadingRegisterTest(unittest.TestCase):
             {
                 "TESTING": True,
                 "DATABASE": str(self.database_path),
+                "ATTACHMENT_ROOT": str(Path(self.temporary_directory.name) / "attachments"),
                 "SECRET_KEY": "test",
             }
         )
@@ -149,6 +152,103 @@ class ReadingRegisterTest(unittest.TestCase):
             self.assertIn("record", columns)
             self.assertEqual(row["title"], "舊資料")
             self.assertEqual(row["record"], "")
+
+
+    def test_planned_order_and_validation(self):
+        self.add_book("First")
+        self.add_book("Second")
+        ids = [row["id"] for row in self.rows()]
+        initial = self.client.get("/").get_data(as_text=True)
+        self.assertLess(initial.index("First"), initial.index("Second"))
+        response = self.client.post("/books/reorder", json={"ids": ids[::-1]})
+        self.assertEqual(response.status_code, 200)
+        updated = self.client.get("/").get_data(as_text=True)
+        self.assertLess(updated.index("Second"), updated.index("First"))
+        self.assertEqual(
+            self.client.post("/books/reorder", json={"ids": [999]}).status_code, 400
+        )
+
+    def test_record_editing_during_reading(self):
+        self.add_book("Notes", "reading", start_date="2026-10-01")
+        book_id = self.rows()[0]["id"]
+        self.client.post(
+            f"/books/{book_id}/record", data={"record": "Chapter 1\nChapter 2"}
+        )
+        self.assertEqual(self.rows()[0]["record"], "Chapter 1\nChapter 2")
+        self.assertIn(
+            "Chapter 2",
+            self.client.get(f"/books/{book_id}/detail").get_data(as_text=True),
+        )
+
+    def test_pdf_upload_open_delete_and_backup(self):
+        self.add_book("PDF example")
+        book_id = self.rows()[0]["id"]
+        uploaded = self.client.post(
+            f"/books/{book_id}/attachments",
+            data={"pdf": (io.BytesIO(b"%PDF-1.7\nsample\n%%EOF"), "reading.pdf")},
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertIn("reading.pdf", uploaded.get_data(as_text=True))
+        with sqlite3.connect(self.database_path) as database:
+            attachment_id = database.execute("SELECT id FROM attachments").fetchone()[0]
+        opened = self.client.get(f"/books/{book_id}/attachments/{attachment_id}")
+        self.assertEqual(opened.status_code, 200)
+        self.assertTrue(opened.data.startswith(b"%PDF-"))
+        backup = self.client.get("/backup")
+        self.assertEqual(backup.status_code, 200)
+        with zipfile.ZipFile(io.BytesIO(backup.data)) as archive:
+            self.assertIn("reading.db", archive.namelist())
+            self.assertTrue(any(name.endswith(".pdf") for name in archive.namelist()))
+        invalid = self.client.post(
+            f"/books/{book_id}/attachments",
+            data={"pdf": (io.BytesIO(b"invalid"), "fake.pdf")},
+            content_type="multipart/form-data", follow_redirects=True,
+        )
+        self.assertIn("僅接受有效的 PDF", invalid.get_data(as_text=True))
+        self.client.post(f"/books/{book_id}/attachments/{attachment_id}/delete")
+        self.assertEqual(
+            self.client.get(f"/books/{book_id}/attachments/{attachment_id}").status_code,
+            404,
+        )
+
+    def test_dates_when_moving_status(self):
+        self.add_book("Old", "completed", "2026-01-01", "2026-01-02")
+        book_id = self.rows()[0]["id"]
+        self.client.post(f"/books/{book_id}/start", data={"start_date": "2026-10-08"})
+        row = self.rows()[0]
+        self.assertEqual(row["status"], "reading")
+        self.assertIsNone(row["finish_date"])
+        invalid = self.client.post(
+            f"/books/{book_id}/complete",
+            data={"finish_date": "2026-01-01", "record": ""},
+        )
+        self.assertIn("完成日期不能早於開始日期", invalid.get_data(as_text=True))
+
+    def test_old_planned_order_is_migrated(self):
+        with tempfile.TemporaryDirectory() as folder:
+            legacy = Path(folder) / "legacy.db"
+            with sqlite3.connect(legacy) as db:
+                db.executescript("""
+                    CREATE TABLE books (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL, author TEXT, edition TEXT,
+                        status TEXT NOT NULL, start_date TEXT, finish_date TEXT,
+                        created_at TEXT NOT NULL
+                    );
+                    INSERT INTO books (title,status,created_at)
+                    VALUES ('first','planned','2026-01-01');
+                    INSERT INTO books (title,status,created_at)
+                    VALUES ('second','planned','2026-01-02');
+                """)
+            upgraded = create_app({"TESTING": True, "DATABASE": str(legacy)})
+            html = upgraded.test_client().get("/").get_data(as_text=True)
+            self.assertLess(html.index("second"), html.index("first"))
+            with sqlite3.connect(legacy) as db:
+                self.assertEqual(
+                    [row[0] for row in db.execute("SELECT sort_order FROM books ORDER BY id")],
+                    [1, 0],
+                )
 
 
 if __name__ == "__main__":

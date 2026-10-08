@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="form-page">
+    <header class="form-heading">
+      <p class="eyebrow">書籍資料</p>
+      <h1>{{ page_title }}</h1>
+    </header>
+
+    <form class="book-form" method="post" data-book-form>
+      <div class="field">
+        <label for="title">書名 <span class="required">必填</span></label>
+        <input id="title" name="title" type="text" value="{{ book.title }}" required autofocus>
+      </div>
+
+      <div class="field">
+        <label for="author">作者 <span class="optional">選填</span></label>
+        <input id="author" name="author" type="text" value="{{ book.author }}">
+      </div>
+
+      <div class="field">
+        <label for="edition">版本 <span class="optional">選填</span></label>
+        <input id="edition" name="edition" type="text" value="{{ book.edition }}">
+      </div>
+
+      <div class="field">
+        <label for="status">狀態</label>
+        <select id="status" name="status" data-status>
+          <option value="planned" {% if book.status == 'planned' %}selected{% endif %}>準備閱讀</option>
+          <option value="reading" {% if book.status == 'reading' %}selected{% endif %}>正在閱讀</option>
+          <option value="completed" {% if book.status == 'completed' %}selected{% endif %}>已完成</option>
+        </select>
+      </div>
+
+      <div class="date-fields">
+        <div class="field">
+          <label for="start_date">開始日期 <span class="optional">選填</span></label>
+          <input id="start_date" name="start_date" type="date" value="{{ book.start_date }}" data-start-date>
+        </div>
+        <div class="field">
+          <label for="finish_date">完成日期 <span class="optional">選填</span></label>
+          <input id="finish_date" name="finish_date" type="date" value="{{ book.finish_date }}" data-finish-date>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="record">記錄 <span class="optional">選填</span></label>
+        <textarea id="record" name="record" rows="8" placeholder="寫下讀完後的感受……">{{ book.record }}</textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="button button--primary" type="submit">儲存</button>
+        <a class="button button--plain" href="{{ url_for('index') }}">取消</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    (() => {
+      const form = document.querySelector('[data-book-form]');
+      const status = form.querySelector('[data-status]');
+      const startDate = form.querySelector('[data-start-date]');
+      const finishDate = form.querySelector('[data-finish-date]');
+      const today = new Date().toLocaleDateString('sv-SE');
+
+      status.addEventListener('change', () => {
+        if (status.value === 'reading' && !startDate.value) startDate.value = today;
+        if (status.value === 'completed' && !finishDate.value) finishDate.value = today;
+      });
+    })();
+  </script>
+{% endblock %}

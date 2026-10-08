@@ -1,0 +1,63 @@
+# Python environments and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases, SQLite sidecars, and copies
+*.db
+*.db-*
+*.db.*
+*.sqlite
+*.sqlite-*
+*.sqlite.*
+*.sqlite3
+*.sqlite3-*
+*.sqlite3.*
+*.sql
+*.dump
+*.bak
+*.backup
+*.old
+*~
+backups/
+backup/
+exports/
+data/
+instance/
+
+# Local configuration, credentials, and logs
+.env
+.env.*
+*.local
+*.local.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+logs/
+secrets/
+credentials/
+.aws/
+.ssh/
+
+# Machine-specific editor and assistant state
+.vscode/
+.idea/
+.codex/
+.agents/
+.DS_Store
+Thumbs.db
+
+# Local font assets (keep on disk; never publish)
+static/fonts/
+*.ttf
+*.otf
+*.woff
+*.woff2
+*.ttc
+*.eot

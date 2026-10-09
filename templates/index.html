@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block body_class %}reading-workspace-page{% endblock %}
+
 {% macro book_row(book, when, draggable=false) %}
   <article class="book-row {% if selected and selected.id == book.id %}is-selected{% endif %}"
            data-book-row data-search="{{ (book.title ~ ' ' ~ (book.author or ''))|lower }}"

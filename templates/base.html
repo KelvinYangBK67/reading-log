@@ -7,7 +7,7 @@
   <title>{% if page_title %}{{ page_title }} · {% endif %}閱讀</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   <header class="site-header">
     <a class="site-title" href="{{ url_for('index') }}">閱讀</a>
     {% block header_action %}{% endblock %}

@@ -194,6 +194,16 @@ class ReadingRegisterTest(unittest.TestCase):
                 self.assertIn(expected, self.client.get(path).get_data(as_text=True))
         self.assertEqual(self.rows()[0]["record"], record)
 
+    def test_workspace_viewport_scroll_is_isolated_from_forms(self):
+        index = self.client.get("/").get_data(as_text=True)
+        form = self.client.get("/books/new").get_data(as_text=True)
+        stylesheet = self.client.get("/static/style.css").get_data(as_text=True)
+        self.assertIn('<body class="reading-workspace-page">', index)
+        self.assertNotIn('class="reading-workspace-page"', form)
+        self.assertIn(".reading-workspace-page .page-shell", stylesheet)
+        self.assertIn("height: 100dvh;", stylesheet)
+        self.assertIn("grid-template-rows: minmax(0, 1fr);", stylesheet)
+
     def test_pdf_upload_open_delete_and_backup(self):
         self.add_book("PDF example")
         book_id = self.rows()[0]["id"]

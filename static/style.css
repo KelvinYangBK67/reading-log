@@ -519,14 +519,34 @@ textarea {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
+/* Only the reading workspace is viewport-bound. Forms retain normal page scrolling. */
+.reading-workspace-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.reading-workspace-page .site-header { flex-shrink: 0; }
+.reading-workspace-page .page-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding-block: 0.65rem;
+  overflow: hidden;
+}
 .workspace {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   grid-template-columns: minmax(0, var(--list-width)) 10px minmax(0, 1fr);
-  min-height: calc(100vh - 7.6rem);
+  grid-template-rows: minmax(0, 1fr);
 }
 .book-pane, .detail-pane {
   min-width: 0;
-  max-height: calc(100vh - 7.6rem);
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -639,6 +659,18 @@ textarea {
 .upload-form input[type="file"] { min-width: 0; max-width: 100%; font-size: 0.82rem; }
 .detail-placeholder { padding: 1rem 0; }
 @media (max-width: 760px) {
+  /* On narrow screens the document scrolls normally; panes do not scroll separately. */
+  .reading-workspace-page {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .reading-workspace-page .page-shell {
+    display: block;
+    overflow: visible;
+    padding-block: 0.65rem 2.5rem;
+  }
   .site-header, .page-shell { width: min(100% - 1.25rem, 52rem); }
   .workspace { display: block; min-height: 0; }
   .book-pane, .detail-pane { max-height: none; overflow: visible; }

@@ -140,26 +140,63 @@ textarea {
   padding-block: 0.65rem 2.5rem;
 }
 
-.messages {
-  margin-bottom: 0.7rem;
+/* Compact, dismissible feedback lives beside the title, outside page content. */
+.header-brand {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
 }
 
-.message {
-  margin: 0.35rem 0;
-  padding: 0.5rem 0.75rem;
-  border-left: 3px solid currentColor;
+.header-brand .site-title {
+  flex-shrink: 0;
+}
+
+.header-notices {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.header-notice {
+  display: inline-flex;
+  max-width: min(26rem, 100%);
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.45rem 0.25rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.2rem;
+  background: var(--surface);
+  color: var(--muted);
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
-.message--success {
-  background: var(--success-bg);
-  color: var(--success-text);
+.header-notice--success { color: var(--success-text); }
+.header-notice--error { color: var(--danger); }
+.header-notice-text { min-width: 0; overflow-wrap: anywhere; }
+.header-notice-dismiss {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.2rem;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-sans);
+  line-height: 1;
+  cursor: pointer;
 }
-
-.message--error {
-  background: var(--error-bg);
-  color: var(--error-text);
+.header-notice-dismiss:hover { background: var(--accent-soft); }
+.header-notice-dismiss:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .reading-section {

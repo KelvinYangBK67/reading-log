@@ -115,6 +115,26 @@ class ReadingRegisterTest(unittest.TestCase):
         self.assertIn("請輸入書名。", response.get_data(as_text=True))
         self.assertEqual(self.rows(), [])
 
+    def test_flash_success_is_small_auto_dismiss_notice_beside_title(self):
+        response = self.add_book("Flash test")
+        html = response.get_data(as_text=True)
+        self.assertIn('class="header-brand"', html)
+        self.assertIn('class="header-notices"', html)
+        self.assertIn('data-dismiss-after="3500"', html)
+        self.assertIn("書籍已新增。", html)
+        self.assertLess(html.index('class="site-title"'), html.index("書籍已新增。"))
+        self.assertLess(html.index("書籍已新增。"), html.index("<main"))
+        self.assertNotIn('class="messages"', html)
+        javascript = self.client.get("/static/notices.js").get_data(as_text=True)
+        self.assertIn("window.setTimeout", javascript)
+        self.assertIn("data-dismiss-notice", html)
+
+    def test_flash_error_remains_until_manually_dismissed(self):
+        html = self.add_book("").get_data(as_text=True)
+        self.assertIn("請輸入書名。", html)
+        self.assertIn('class="header-notice header-notice--error"', html)
+        self.assertNotIn('data-dismiss-after="3500"', html)
+
     def test_existing_database_is_upgraded_without_losing_books(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             database_path = Path(temporary_directory) / "legacy.db"

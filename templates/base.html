@@ -9,21 +9,30 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <header class="site-header">
-    <a class="site-title" href="{{ url_for('index') }}">閱讀</a>
+    <div class="header-brand">
+      <a class="site-title" href="{{ url_for('index') }}">閱讀</a>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="header-notices">
+            {% for category, message in messages %}
+              <div class="header-notice header-notice--{{ category }}"
+                   role="{% if category == 'error' %}alert{% else %}status{% endif %}"
+                   data-notice{% if category == 'success' %} data-dismiss-after="3500"{% endif %}>
+                <span class="header-notice-text">{{ message }}</span>
+                <button class="header-notice-dismiss" type="button"
+                        data-dismiss-notice aria-label="關閉提示">×</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
     {% block header_action %}{% endblock %}
   </header>
 
   <main class="page-shell">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="messages" aria-live="polite">
-          {% for category, message in messages %}
-            <p class="message message--{{ category }}">{{ message }}</p>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
     {% block content %}{% endblock %}
   </main>
+  <script src="{{ url_for('static', filename='notices.js') }}" defer></script>
 </body>
 </html>

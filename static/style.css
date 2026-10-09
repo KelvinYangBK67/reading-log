@@ -616,6 +616,7 @@ textarea {
 .detail-section h2 { margin: 0; font-size: 1.1rem; }
 .record-content {
   white-space: pre-wrap; overflow-wrap: anywhere;
+  font-family: var(--font-sans); text-indent: 0;
   color: var(--ink); line-height: 1.75; font-size: 1rem;
 }
 .record-form { margin-top: 0.5rem; }

@@ -35,9 +35,7 @@
         {% if book.record %}編輯{% else %}新增記錄{% endif %}
       </button>
     </div>
-    <div class="record-content" data-record-display>
-      {% if book.record %}{{ book.record }}{% else %}<span class="empty-state">尚無閱讀記錄。</span>{% endif %}
-    </div>
+    <div class="record-content" data-record-display>{% if book.record %}{{ book.record }}{% else %}<span class="empty-state">尚無閱讀記錄。</span>{% endif %}</div>
     <form method="post" action="{{ url_for('update_record', book_id=book.id) }}"
           class="record-form" data-record-form hidden>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

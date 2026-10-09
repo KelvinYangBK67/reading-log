@@ -180,6 +180,20 @@ class ReadingRegisterTest(unittest.TestCase):
             self.client.get(f"/books/{book_id}/detail").get_data(as_text=True),
         )
 
+    def test_display_keeps_exact_note_whitespace_without_template_indentation(self):
+        record = "  第一章\n原文  文字 & <註>\n\n第二章"
+        self.add_book("Notes", "reading", start_date="2026-10-01", record=record)
+        book_id = self.rows()[0]["id"]
+        expected = (
+            '<div class="record-content" data-record-display>'
+            '  第一章\n原文  文字 &amp; &lt;註&gt;\n\n第二章'
+            '</div>'
+        )
+        for path in ("/", f"/books/{book_id}/detail"):
+            with self.subTest(path=path):
+                self.assertIn(expected, self.client.get(path).get_data(as_text=True))
+        self.assertEqual(self.rows()[0]["record"], record)
+
     def test_pdf_upload_open_delete_and_backup(self):
         self.add_book("PDF example")
         book_id = self.rows()[0]["id"]
